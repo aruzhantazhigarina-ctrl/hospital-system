@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>Admin Panel</title>
 
-<!-- Google Font -->
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
@@ -12,19 +11,20 @@ body {
     margin: 0;
     font-family: 'Poppins', sans-serif;
     background: linear-gradient(135deg, #4facfe, #00f2fe);
-    color: #333;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center; /* центр */
 }
 
 h1 {
-    text-align: center;
     color: white;
     font-size: 40px;
-    margin-top: 20px;
+    margin: 20px 0;
+    text-align: center;
 }
 
 button {
-    display: block;
-    margin: 20px auto;
     padding: 12px 25px;
     font-size: 18px;
     border: none;
@@ -40,21 +40,27 @@ button:hover {
     background: #ff4f9a;
 }
 
+.top-btn {
+    margin-bottom: 20px;
+}
+
 #out {
+    width: 100%;
+    max-width: 1100px; /* ровная сетка */
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
     gap: 20px;
     padding: 20px;
+    box-sizing: border-box;
 }
 
 .card {
-    background: rgba(255, 255, 255, 0.9);
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 20px;
     padding: 20px;
     box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    position: relative;
-    overflow: hidden;
-    animation: fadeIn 0.6s ease;
+    animation: fadeIn 0.5s ease;
+    text-align: left;
 }
 
 .card img {
@@ -64,13 +70,13 @@ button:hover {
 }
 
 .card h3 {
-    margin: 0;
-    font-size: 22px;
+    margin: 0 0 5px 0;
+    font-size: 20px;
 }
 
 .card p {
-    margin: 5px 0;
-    font-size: 16px;
+    margin: 4px 0;
+    font-size: 15px;
 }
 
 @keyframes fadeIn {
@@ -79,20 +85,32 @@ button:hover {
 }
 
 .form {
+    width: 100%;
+    max-width: 400px;
     background: white;
     padding: 20px;
     margin: 20px;
     border-radius: 15px;
     box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
 }
 
 input, select {
     width: 100%;
+    max-width: 320px;
     padding: 10px;
-    margin: 10px 0;
+    margin: 8px 0;
     border-radius: 8px;
     border: 1px solid #ccc;
     font-size: 16px;
+}
+
+.form button {
+    width: 100%;
+    max-width: 320px;
 }
 
 </style>
@@ -101,7 +119,7 @@ input, select {
 
 <h1>✨ Admin Panel</h1>
 
-<button onclick="load()">📋 Show Appointments</button>
+<button class="top-btn" onclick="load()">📋 Show Appointments</button>
 
 <div id="out"></div>
 
