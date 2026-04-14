@@ -26,11 +26,17 @@ def init_db():
         )
     """)
 
-    cur.execute("SELECT COUNT(*) FROM districts")
-    if cur.fetchone()[0] == 0:
-        cur.execute("INSERT INTO districts (name, address) VALUES (?, ?)", ("Есиль", "Мангилик Ел 52"))
-        cur.execute("INSERT INTO districts (name, address) VALUES (?, ?)", ("Сарыарка", "Тауелсиздик 1-25"))
-        cur.execute("INSERT INTO districts (name, address) VALUES (?, ?)", ("Алматы", "Абая 10"))
+   cur.execute("SELECT COUNT(*) FROM districts")
+if cur.fetchone()[0] == 0:
+
+    cur.executemany("""
+        INSERT INTO districts (name, address)
+        VALUES (?, ?)
+    """, [
+        ("Есиль", "Мангилик Ел 52"),
+        ("Сарыарка", "Тауелсиздик 1-25"),
+        ("Алматы", "Абая 10")
+    ])
 
     # ---------------- DOCTORS ----------------
     cur.execute("""
