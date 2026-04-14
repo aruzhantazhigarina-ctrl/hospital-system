@@ -28,36 +28,34 @@
 
 <button onclick="book()">Book</button>
 
-<hr>
-
 <script>
 
 async function loadDistricts() {
-    let r = await fetch("/districts");
-    let d = await r.json();
+    let res = await fetch("/districts");
+    let data = await res.json();
 
+    let district = document.getElementById("district");
     district.innerHTML = "";
 
-    d.forEach(x => {
-        district.innerHTML += `
-        <option value="${x.id}">
-        ${x.name} — ${x.address}
-        </option>`;
+    data.forEach(x => {
+        district.innerHTML += `<option value="${x.id}">${x.name} — ${x.address}</option>`;
     });
 
     loadDoctors();
 }
 
 async function loadDoctors() {
-    let r = await fetch("/doctors/" + district.value);
-    let d = await r.json();
+    let district = document.getElementById("district").value;
 
+    let res = await fetch("/doctors/" + district);
+    let data = await res.json();
+
+    let doctor = document.getElementById("doctor");
     doctor.innerHTML = "";
 
-    d.forEach(x => {
-        doctor.innerHTML += `
-        <option value="${x.id}">
-        ${x.full_name} (${x.specialization}) кабинет ${x.cabinet}
+    data.forEach(x => {
+        doctor.innerHTML += `<option value="${x.id}">
+        ${x.full_name} (${x.specialization}) ${x.cabinet}
         </option>`;
     });
 
@@ -65,66 +63,50 @@ async function loadDoctors() {
 }
 
 async function loadTime() {
-    if (!date.value || !doctor.value) return;
+    let doctor = document.getElementById("doctor").value;
+    let date = document.getElementById("date").value;
 
-    let r = await fetch(`/available/${doctor.value}/${date.value}`);
-    let d = await r.json();
+    if (!doctor || !date) return;
 
+    let res = await fetch(`/available/${doctor}/${date}`);
+    let data = await res.json();
+
+    let time = document.getElementById("time");
     time.innerHTML = "";
 
-    d.forEach(x => {
-        time.innerHTML += `<option value="${x}">${x}</option>`;
+    data.forEach(t => {
+        time.innerHTML += `<option value="${t}">${t}</option>`;
     });
-
-    // 💣 ВОТ ГЛАВНЫЙ ФИКС
-    if (d.length > 0) {
-        time.value = d[0]; // автоматически выбираем первое время
-    }
 }
 
 async function book() {
 
-    let data = {
-        name: name.value.trim(),
-        iin: iin.value.trim(),
-        phone: phone.value.trim(),
-        gender: gender.value,
-        doctor_id: doctor.value,
-        date: date.value,
-        time: time.value
-    };
+    let name = document.getElementById("name").value;
+    let iin = document.getElementById("iin").value;
+    let phone = document.getElementById("phone").value;
+    let gender = document.getElementById("gender").value;
+    let doctor = document.getElementById("doctor").value;
+    let date = document.getElementById("date").value;
+    let time = document.getElementById("time").value;
 
-    console.log("DATA:", data);
+    console.log({name, iin, phone, gender, doctor, date, time});
 
-    if (!data.name || !data.iin || !data.phone || !data.date || !data.time) {
-        alert("❌ Выбери дату и время + заполни данные!");
+    if (!name || !iin || !phone || !doctor || !date || !time) {
+        alert("❌ Заполни все поля и выбери время!");
         return;
     }
 
     let res = await fetch("/add", {
         method: "POST",
         headers: {"Content-Type":"application/json"},
-        body: JSON.stringify(data)
+        body: JSON.stringify({name, iin, phone, gender, doctor_id: doctor, date, time})
     });
 
     let text = await res.text();
 
-    if (text === "TIME_BUSY") {
-        alert("❌ Занято!");
-        return;
-    }
+    if (text === "OK") alert("✅ Успешно!");
+    else alert("❌ Ошибка: " + text);
 
-    if (text === "WEEKEND") {
-        alert("❌ Только будни!");
-        return;
-    }
-
-    if (text === "ERROR") {
-        alert("❌ Ошибка!");
-        return;
-    }
-
-    alert("✅ Записано!");
     loadTime();
 }
 
