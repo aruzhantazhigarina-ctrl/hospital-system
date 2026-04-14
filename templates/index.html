@@ -37,7 +37,7 @@
 
     <div id="records"></div>
 
-    <script>
+<script>
 
 async function loadDistricts() {
     let r = await fetch("/districts");
@@ -48,7 +48,7 @@ async function loadDistricts() {
     d.forEach(x => {
         district.innerHTML += `
         <option value="${x.id}">
-        ${x.name} — ${x.address || "адрес не указан"}
+        ${x.name} — ${x.address}
         </option>
         `;
     });
@@ -125,6 +125,8 @@ async function book() {
     }
 
     alert("✅ Записано!");
+
+    // 💥 ВОТ ЭТО ГЛАВНОЕ
     loadTime();
 }
 
@@ -146,7 +148,7 @@ async function loadRecords() {
 
 window.onload = loadDistricts;
 
-    </script>
+</script>
 
 </body>
 </html>
