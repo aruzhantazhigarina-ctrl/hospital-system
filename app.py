@@ -6,7 +6,6 @@ app = Flask(__name__)
 DB = "hospital.db"
 
 
-# ---------------- DB ----------------
 def get_db():
     conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
@@ -17,7 +16,7 @@ def init_db():
     conn = get_db()
     cur = conn.cursor()
 
-    # ---------------- TABLES ----------------
+    # таблицы
     cur.execute("""
         CREATE TABLE IF NOT EXISTS districts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -57,11 +56,10 @@ def init_db():
         )
     """)
 
-    # 💣 ВАЖНО: ОБНОВЛЯЕМ ДАННЫЕ ВСЕГДА
+    # 💣 чистим и заново заполняем
     cur.execute("DELETE FROM districts")
     cur.execute("DELETE FROM doctors")
 
-    # ---------------- DISTRICTS ----------------
     cur.executemany("""
         INSERT INTO districts (name, address)
         VALUES (?, ?)
@@ -71,9 +69,10 @@ def init_db():
         ("Алматы", "Абая 10")
     ])
 
-    # ---------------- DOCTORS ----------------
-    doctors = [
-        # Есиль
+    cur.executemany("""
+        INSERT INTO doctors (full_name, specialization, cabinet, district_id)
+        VALUES (?, ?, ?, ?)
+    """, [
         ("Сериков Нурлан Ерланович", "Стоматолог-терапевт", "101", 1),
         ("Касымов Айбек Нурланович", "Хирург-стоматолог", "102", 1),
         ("Жумабеков Ержан Канатович", "Челюстно-лицевой хирург", "103", 1),
@@ -81,7 +80,6 @@ def init_db():
         ("Алиева Жанар Болатовна", "Гнатолог", "105", 1),
         ("Омаров Руслан Дастанович", "Имплантолог", "106", 1),
 
-        # Сарыарка
         ("Бекетов Арман Серикович", "Стоматолог-терапевт", "201", 2),
         ("Нурпеисов Канат Ермекович", "Хирург-стоматолог", "202", 2),
         ("Садыков Марат Нурланович", "Челюстно-лицевой хирург", "203", 2),
@@ -89,19 +87,13 @@ def init_db():
         ("Турсунов Ермек Болатович", "Гнатолог", "205", 2),
         ("Жаксылыков Дастан Канатович", "Имплантолог", "206", 2),
 
-        # Алматы
         ("Айдаров Тимур Ерланович", "Стоматолог-терапевт", "301", 3),
         ("Смагулова Динара Нурлановна", "Хирург-стоматолог", "302", 3),
         ("Исабеков Нурсултан Серикович", "Челюстно-лицевой хирург", "303", 3),
         ("Калиева Айгуль Болатовна", "Ортодонт", "304", 3),
         ("Мухамеджанов Олжас Ермекович", "Гнатолог", "305", 3),
         ("Рахимов Ерасыл Нурланович", "Имплантолог", "306", 3),
-    ]
-
-    cur.executemany("""
-        INSERT INTO doctors (full_name, specialization, cabinet, district_id)
-        VALUES (?, ?, ?, ?)
-    """, doctors)
+    ])
 
     conn.commit()
     conn.close()
@@ -110,7 +102,6 @@ def init_db():
 init_db()
 
 
-# ---------------- ROUTES ----------------
 @app.route('/')
 def home():
     return render_template("index.html")
@@ -167,39 +158,49 @@ def add():
     conn = get_db()
     cur = conn.cursor()
 
-    day = datetime.datetime.strptime(data['date'], "%Y-%m-%d").weekday()
-    if day >= 5:
-        return "WEEKEND"
+    try:
+        # выходные
+        day = datetime.datetime.strptime(data['date'], "%Y-%m-%d").weekday()
+        if day >= 5:
+            return "WEEKEND"
 
-    cur.execute("""
-        SELECT * FROM appointments
-        WHERE doctor_id=? AND date=? AND time=?
-    """, (data['doctor_id'], data['date'], data['time']))
-
-    if cur.fetchone():
-        return "TIME_BUSY"
-
-    cur.execute("SELECT id FROM patients WHERE iin=?", (data['iin'],))
-    patient = cur.fetchone()
-
-    if patient:
-        patient_id = patient["id"]
-    else:
+        # занято
         cur.execute("""
-            INSERT INTO patients (full_name, iin, phone, gender)
+            SELECT * FROM appointments
+            WHERE doctor_id=? AND date=? AND time=?
+        """, (data['doctor_id'], data['date'], data['time']))
+
+        if cur.fetchone():
+            return "TIME_BUSY"
+
+        # пациент
+        cur.execute("SELECT id FROM patients WHERE iin=?", (data['iin'],))
+        patient = cur.fetchone()
+
+        if patient:
+            patient_id = patient["id"]
+        else:
+            cur.execute("""
+                INSERT INTO patients (full_name, iin, phone, gender)
+                VALUES (?, ?, ?, ?)
+            """, (data['name'], data['iin'], data['phone'], data['gender']))
+            patient_id = cur.lastrowid
+
+        # запись
+        cur.execute("""
+            INSERT INTO appointments (doctor_id, patient_id, date, time)
             VALUES (?, ?, ?, ?)
-        """, (data['name'], data['iin'], data['phone'], data['gender']))
-        patient_id = cur.lastrowid
+        """, (data['doctor_id'], patient_id, data['date'], data['time']))
 
-    cur.execute("""
-        INSERT INTO appointments (doctor_id, patient_id, date, time)
-        VALUES (?, ?, ?, ?)
-    """, (data['doctor_id'], patient_id, data['date'], data['time']))
+        conn.commit()
+        return "OK"
 
-    conn.commit()
-    conn.close()
+    except Exception as e:
+        print("ERROR:", e)
+        return "ERROR"
 
-    return "OK"
+    finally:
+        conn.close()
 
 
 @app.route('/all_appointments')
