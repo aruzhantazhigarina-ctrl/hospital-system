@@ -54,15 +54,18 @@
             loadDoctors();
         }
 
+        // 🔥 ВОТ ТУТ ИЗМЕНЕНИЕ
         async function loadDoctors() {
             let r = await fetch("/doctors/" + el("district").value);
             let d = await r.json();
 
             el("doctor").innerHTML = "";
+
             d.forEach(x => {
-                el("doctor").innerHTML += `<option value="${x.id}">
-            ${x.full_name} (${x.specialization})
-            </option>`;
+                el("doctor").innerHTML += `
+                <option value="${x.id}">
+                🧑‍⚕️ ${x.full_name} — ${x.specialization} (каб. ${x.cabinet})
+                </option>`;
             });
 
             loadTime();
