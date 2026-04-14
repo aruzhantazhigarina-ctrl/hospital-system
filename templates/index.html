@@ -41,18 +41,19 @@
         function el(id) {
             return document.getElementById(id);
         }
+async function loadDistricts() {
+    let r = await fetch("/districts");
+    let d = await r.json();
 
-        async function loadDistricts() {
-            let r = await fetch("/districts");
-            let d = await r.json();
+    el("district").innerHTML = "";
 
-            el("district").innerHTML = "";
-            d.forEach(x => {
-                el("district").innerHTML += `<option value="${x.id}">${x.name}</option>`;
-            });
+    d.forEach(x => {
+        el("district").innerHTML += 
+        `<option value="${x.id}">📍 ${x.name} — ${x.address}</option>`;
+    });
 
-            loadDoctors();
-        }
+    loadDoctors();
+}
 
         // 🔥 ВОТ ТУТ ИЗМЕНЕНИЕ
         async function loadDoctors() {
