@@ -63,44 +63,45 @@ button {
     margin: 10px 0;
     border-radius: 15px;
 }
-
-img {
-    width: 100%;
-    border-radius: 15px;
-}
 </style>
 </head>
 
 <body>
 
-<h1>💊 Дәрігерге жазылу</h1>
+<!-- 🌐 Переключатель языка -->
+<select id="lang" onchange="setLang(this.value)">
+  <option value="ru">Русский</option>
+  <option value="kz">Қазақша</option>
+</select>
+
+<h1 id="title"></h1>
 
 <div class="container">
 
 <select id="district" onchange="loadDoctors()"></select>
 <select id="doctor" onchange="loadTime()"></select>
 
-<input id="name_input" placeholder="Толық аты-жөніңіз">
-<input id="iin_input" placeholder="ЖСН">
-<input id="phone_input" placeholder="Телефон нөміріңіз">
+<input id="name_input">
+<input id="iin_input">
+<input id="phone_input">
 
 <select id="gender_input">
-<option>Е</option>
-<option>Ә</option>
+<option></option>
+<option></option>
 </select>
 
 <input type="date" id="date_input" onchange="loadTime()">
 <select id="time_input"></select>
 
-<button onclick="book()">📅 Жазылу</button>
+<button onclick="book()"></button>
 
 </div>
 
 <div class="container">
-<h2>📋 Қабылдау нәтижесі</h2>
+<h2 id="records_title"></h2>
 
-<input id="search_iin" placeholder="ЖСН енгізіңіз">
-<button onclick="loadRecords()">Көрсету</button>
+<input id="search_iin">
+<button onclick="loadRecords()" id="show_btn"></button>
 
 <div id="records"></div>
 </div>
@@ -108,12 +109,67 @@ img {
 <script>
 function el(id){return document.getElementById(id)}
 
-window.onload = () => {
-    let today = new Date().toISOString().split('T')[0];
-    el('date_input').value = today;
-    loadDistricts();
+// 🌐 переводы
+const T = {
+  ru: {
+    title: "💊 Запись на приём",
+    name: "ФИО",
+    iin: "ИИН",
+    phone: "Телефон",
+    gender_m: "Мужской",
+    gender_f: "Женский",
+    book: "📅 Записаться",
+    records: "📋 Мои записи",
+    search: "Введите ИИН",
+    show: "Показать"
+  },
+  kz: {
+    title: "💊 Дәрігерге жазылу",
+    name: "Аты-жөні",
+    iin: "ЖСН",
+    phone: "Телефон",
+    gender_m: "Ер",
+    gender_f: "Әйел",
+    book: "📅 Жазылу",
+    records: "📋 Менің жазбаларым",
+    search: "ЖСН енгізіңіз",
+    show: "Көрсету"
+  }
+};
+
+// 🌐 смена языка
+function setLang(lang){
+  localStorage.setItem("lang", lang)
+  const t = T[lang]
+
+  el("title").innerText = t.title
+  el("name_input").placeholder = t.name
+  el("iin_input").placeholder = t.iin
+  el("phone_input").placeholder = t.phone
+
+  document.querySelector("#gender_input option:nth-child(1)").innerText = t.gender_m
+  document.querySelector("#gender_input option:nth-child(2)").innerText = t.gender_f
+
+  document.querySelector("button[onclick='book()']").innerText = t.book
+
+  el("records_title").innerText = t.records
+  el("search_iin").placeholder = t.search
+  el("show_btn").innerText = t.show
 }
 
+// 🚀 загрузка
+window.onload = () => {
+  let today = new Date().toISOString().split('T')[0];
+  el('date_input').value = today;
+
+  loadDistricts();
+
+  let lang = localStorage.getItem("lang") || "ru"
+  el("lang").value = lang
+  setLang(lang)
+}
+
+// 🔽 данные
 async function loadDistricts(){
  let r=await fetch('/districts')
  let d=await r.json()
@@ -178,7 +234,7 @@ async function book(){
  })
 
  let text=await res.text()
- alert(text==='OK'?'✅ Сіз жазылдыңыз!':'❌ '+text)
+ alert(text==='OK'?'✅':'❌ '+text)
  loadTime()
 }
 
@@ -191,8 +247,8 @@ async function loadRecords(){
  d.forEach(x=>{
   el('records').innerHTML+=`
   <div class="card">
-    <p><b>👨‍⚕️ ${x.doctor}</b></p>
-    <p>📝 ${x.diagnosis}</p>
+    <p><b>${x.doctor}</b></p>
+    <p>${x.diagnosis}</p>
   </div>`
  })
 }
