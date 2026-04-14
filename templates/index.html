@@ -7,47 +7,54 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
+* {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
     font-family: 'Poppins', sans-serif;
     background: linear-gradient(135deg, #667eea, #764ba2);
-
     display: flex;
     flex-direction: column;
-    align-items: center;   /* ✅ центр по горизонтали */
+    align-items: center;
+}
+
+h1 {
+    color: white;
 }
 
 .container {
     background: rgba(255,255,255,0.1);
     padding: 25px;
-    margin: 20px auto;
+    margin: 20px;
     width: 100%;
-    max-width: 450px;      /* ✅ фикс ширина */
+    max-width: 450px;
     border-radius: 20px;
     backdrop-filter: blur(10px);
-
     display: flex;
     flex-direction: column;
-    align-items: center;   /* ✅ центр содержимого */
+    align-items: center;
 }
 
-input, select {
+input, select, button {
     width: 100%;
-    max-width: 380px;      /* ✅ чтобы не “прыгали” */
+    max-width: 380px;
     padding: 12px;
-    margin: 8px 0;
+    margin: 10px 0;
     border-radius: 10px;
     border: none;
     font-size: 16px;
 }
 
-button {
-    width: 100%;
-    max-width: 380px;
-    padding: 12px;
+select {
+    cursor: pointer;
 }
-#records {
-    margin-top: 20px;
+
+button {
+    background: #ff7eb3;
+    color: white;
+    cursor: pointer;
 }
 
 .card {
@@ -61,11 +68,10 @@ img {
     width: 100%;
     border-radius: 15px;
 }
-
 </style>
 </head>
+
 <body>
-    <h1 style="color:red;">TEST NEW UI</h1>
 
 <h1>💊 Online Booking</h1>
 
@@ -102,13 +108,25 @@ img {
 <script>
 function el(id){return document.getElementById(id)}
 
+window.onload = () => {
+    let today = new Date().toISOString().split('T')[0];
+    el('date_input').value = today;
+    loadDistricts();
+}
+
 async function loadDistricts(){
  let r=await fetch('/districts')
  let d=await r.json()
+
  el('district').innerHTML=''
+
  d.forEach(x=>{
-  el('district').innerHTML+=`<option value="${x.id}">${x.name}</option>`
+  el('district').innerHTML+=`
+    <option value="${x.id}">
+      ${x.name} — ${x.address}
+    </option>`
  })
+
  if(d.length>0){
   el('district').value=d[0].id
   loadDoctors()
@@ -118,18 +136,27 @@ async function loadDistricts(){
 async function loadDoctors(){
  let r=await fetch('/doctors/'+el('district').value)
  let d=await r.json()
+
  el('doctor').innerHTML=''
+
  d.forEach(x=>{
-  el('doctor').innerHTML+=`<option value="${x.id}">${x.full_name}</option>`
+  el('doctor').innerHTML+=`
+    <option value="${x.id}">
+      ${x.full_name} — ${x.specialization} (каб. ${x.cabinet})
+    </option>`
  })
+
  loadTime()
 }
 
 async function loadTime(){
  if(!el('date_input').value)return
+
  let r=await fetch(`/available/${el('doctor').value}/${el('date_input').value}`)
  let d=await r.json()
+
  el('time_input').innerHTML=''
+
  d.forEach(t=>{
   el('time_input').innerHTML+=`<option>${t}</option>`
  })
@@ -149,6 +176,7 @@ async function book(){
    time:el('time_input').value
   })
  })
+
  let text=await res.text()
  alert(text==='OK'?'✅ Booked!':'❌ '+text)
  loadTime()
@@ -157,20 +185,18 @@ async function book(){
 async function loadRecords(){
  let r=await fetch('/records_by_iin/'+el('search_iin').value)
  let d=await r.json()
+
  el('records').innerHTML=''
+
  d.forEach(x=>{
   el('records').innerHTML+=`
   <div class="card">
-    <img src="https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif">
     <p><b>👨‍⚕️ ${x.doctor}</b></p>
     <p>📝 ${x.diagnosis}</p>
   </div>`
  })
 }
-
-window.onload=loadDistricts
 </script>
 
 </body>
 </html>
-
