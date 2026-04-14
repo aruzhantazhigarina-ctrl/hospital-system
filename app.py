@@ -1,21 +1,86 @@
 ﻿from flask import Flask, request, jsonify, render_template
-import mysql.connector
+import sqlite3
 import datetime
-import traceback
+import os
 
 app = Flask(__name__)
 
-def get_db():
-    return mysql.connector.connect(
-        host="localhost",
-        user="root",
-        password="1590",
-        database="hospital_db"
-    )
+DB_NAME = "hospital.db"
 
+
+# ---------------- DB ----------------
+def get_db():
+    conn = sqlite3.connect(DB_NAME)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+# ---------------- INIT DB ----------------
+def init_db():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS districts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT,
+        address TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS doctors (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        full_name TEXT,
+        specialization TEXT,
+        cabinet TEXT,
+        district_id INTEGER
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS patients (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        full_name TEXT,
+        iin TEXT,
+        phone TEXT,
+        gender TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS appointments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        doctor_id INTEGER,
+        patient_id INTEGER,
+        date TEXT,
+        time TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS medical_records (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        doctor_id INTEGER,
+        patient_id INTEGER,
+        diagnosis TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+
+# ---------------- INIT ON START ----------------
+if not os.path.exists(DB_NAME):
+    init_db()
+
+
+# ---------------- ROUTES ----------------
 @app.route('/')
 def home():
     return render_template("index.html")
+
 
 @app.route('/admin')
 def admin():
@@ -25,124 +90,95 @@ def admin():
 @app.route('/districts')
 def districts():
     conn = get_db()
-    cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT id, name, address FROM districts")
-    data = cur.fetchall()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM districts")
+    rows = cur.fetchall()
     conn.close()
-    return jsonify(data)
+    return jsonify([dict(r) for r in rows])
 
 
 @app.route('/doctors/<int:district_id>')
 def doctors(district_id):
     conn = get_db()
-    cur = conn.cursor(dictionary=True)
-    cur.execute("""
-        SELECT id, full_name, specialization, cabinet
-        FROM doctors
-        WHERE district_id=%s
-    """, (district_id,))
-    data = cur.fetchall()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM doctors WHERE district_id=?", (district_id,))
+    rows = cur.fetchall()
     conn.close()
-    return jsonify(data)
+    return jsonify([dict(r) for r in rows])
 
 
 @app.route('/available/<int:doctor_id>/<date>')
 def available(doctor_id, date):
-    conn = get_db()
-    cur = conn.cursor(dictionary=True)
 
     slots = ["09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00"]
 
+    conn = get_db()
+    cur = conn.cursor()
     cur.execute("""
         SELECT time FROM appointments
-        WHERE doctor_id=%s AND date=%s
+        WHERE doctor_id=? AND date=?
     """, (doctor_id, date))
 
-    busy = [str(x["time"])[:5] for x in cur.fetchall()]
-    free = [t for t in slots if t not in busy]
-
+    busy = [r[0] for r in cur.fetchall()]
     conn.close()
+
+    free = [t for t in slots if t not in busy]
     return jsonify(free)
 
 
 @app.route('/add', methods=['POST'])
 def add():
-    try:
-        data = request.json
+    data = request.json
 
-        if not data.get('name'):
-            return "Введите имя"
-        if not data.get('iin'):
-            return "Введите ИИН"
-        if not data.get('date'):
-            return "Выберите дату"
-        if not data.get('time'):
-            return "Выберите время"
+    conn = get_db()
+    cur = conn.cursor()
 
-        conn = get_db()
-        cur = conn.cursor(dictionary=True)
+    # проверка занято
+    cur.execute("""
+        SELECT * FROM appointments
+        WHERE doctor_id=? AND date=? AND time=?
+    """, (data['doctor_id'], data['date'], data['time']))
 
-        day = datetime.datetime.strptime(data['date'], "%Y-%m-%d").weekday()
-        if day >= 5:
-            return "Только будни"
+    if cur.fetchone():
+        return "BUSY"
 
+    # пациент
+    cur.execute("SELECT id FROM patients WHERE iin=?", (data['iin'],))
+    p = cur.fetchone()
+
+    if p:
+        patient_id = p[0]
+    else:
         cur.execute("""
-            SELECT id FROM appointments
-            WHERE doctor_id=%s AND date=%s AND time=%s
-        """, (data['doctor_id'], data['date'], data['time']))
+            INSERT INTO patients (full_name, iin, phone, gender)
+            VALUES (?,?,?,?)
+        """, (data['name'], data['iin'], data['phone'], data['gender']))
+        patient_id = cur.lastrowid
 
-        if cur.fetchone():
-            return "Это время уже занято"
+    # запись
+    cur.execute("""
+        INSERT INTO appointments (doctor_id, patient_id, date, time)
+        VALUES (?,?,?,?)
+    """, (data['doctor_id'], patient_id, data['date'], data['time']))
 
-        cur.execute("SELECT id FROM patients WHERE iin=%s", (data['iin'],))
-        patient = cur.fetchone()
+    conn.commit()
+    conn.close()
 
-        if patient:
-            patient_id = patient['id']
-        else:
-            cur.execute("""
-                INSERT INTO patients (full_name, iin, phone, gender)
-                VALUES (%s,%s,%s,%s)
-            """, (
-                data['name'],
-                data['iin'],
-                data.get('phone', ''),
-                data.get('gender', '')
-            ))
-            patient_id = cur.lastrowid
-
-        cur.execute("""
-            INSERT INTO appointments (doctor_id, patient_id, date, time)
-            VALUES (%s,%s,%s,%s)
-        """, (
-            data['doctor_id'],
-            patient_id,
-            data['date'],
-            data['time']
-        ))
-
-        conn.commit()
-        conn.close()
-
-        return "OK"
-
-    except Exception as e:
-        traceback.print_exc()
-        return str(e)
+    return "OK"
 
 
 @app.route('/all_appointments')
 def all_appointments():
     conn = get_db()
-    cur = conn.cursor(dictionary=True)
+    cur = conn.cursor()
 
     cur.execute("""
         SELECT a.id,
-               d.full_name AS doctor,
+               d.full_name,
                d.specialization,
                d.cabinet,
-               p.id AS patient_id,
-               p.full_name AS patient,
+               p.id,
+               p.full_name,
                p.iin,
                p.phone,
                a.date,
@@ -152,55 +188,12 @@ def all_appointments():
         JOIN patients p ON a.patient_id = p.id
     """)
 
-    data = cur.fetchall()
-    conn.close()
-    return jsonify(data)
-
-
-@app.route('/patients')
-def patients():
-    conn = get_db()
-    cur = conn.cursor(dictionary=True)
-    cur.execute("SELECT id, full_name, iin FROM patients")
-    data = cur.fetchall()
-    conn.close()
-    return jsonify(data)
-
-
-@app.route('/add_record', methods=['POST'])
-def add_record():
-    data = request.json
-
-    conn = get_db()
-    cur = conn.cursor()
-
-    cur.execute("""
-        INSERT INTO medical_records (doctor_id, patient_id, diagnosis)
-        VALUES (%s,%s,%s)
-    """, (data['doctor_id'], data['patient_id'], data['diagnosis']))
-
-    conn.commit()
+    rows = cur.fetchall()
     conn.close()
 
-    return "OK"
+    return jsonify(rows)
 
 
-@app.route('/records_by_iin/<iin>')
-def records_by_iin(iin):
-    conn = get_db()
-    cur = conn.cursor(dictionary=True)
-
-    cur.execute("""
-        SELECT d.full_name AS doctor, m.diagnosis
-        FROM medical_records m
-        JOIN doctors d ON m.doctor_id = d.id
-        JOIN patients p ON m.patient_id = p.id
-        WHERE p.iin=%s
-    """, (iin,))
-
-    data = cur.fetchall()
-    conn.close()
-    return jsonify(data)
-
+# ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run()
