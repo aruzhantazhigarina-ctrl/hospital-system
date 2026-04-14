@@ -30,13 +30,6 @@
 
 <hr>
 
-<h2>My Medical Records</h2>
-
-<input id="search_iin">
-<button onclick="loadRecords()">Show</button>
-
-<div id="records"></div>
-
 <script>
 
 async function loadDistricts() {
@@ -82,6 +75,11 @@ async function loadTime() {
     d.forEach(x => {
         time.innerHTML += `<option value="${x}">${x}</option>`;
     });
+
+    // 💣 ВОТ ГЛАВНЫЙ ФИКС
+    if (d.length > 0) {
+        time.value = d[0]; // автоматически выбираем первое время
+    }
 }
 
 async function book() {
@@ -96,11 +94,10 @@ async function book() {
         time: time.value
     };
 
-    console.log("DATA:", data); // 👈 поможет если снова баг
+    console.log("DATA:", data);
 
-    // 💣 НОРМАЛЬНАЯ ПРОВЕРКА
-    if (!data.name || !data.iin || !data.phone || !data.date || !data.time || !data.doctor_id) {
-        alert("❌ Заполни ВСЕ поля и выбери время!");
+    if (!data.name || !data.iin || !data.phone || !data.date || !data.time) {
+        alert("❌ Выбери дату и время + заполни данные!");
         return;
     }
 
@@ -123,27 +120,12 @@ async function book() {
     }
 
     if (text === "ERROR") {
-        alert("❌ Ошибка сервера!");
+        alert("❌ Ошибка!");
         return;
     }
 
     alert("✅ Записано!");
     loadTime();
-}
-
-async function loadRecords() {
-    let r = await fetch("/records_by_iin/" + search_iin.value);
-    let d = await r.json();
-
-    records.innerHTML = "";
-
-    d.forEach(x => {
-        records.innerHTML += `
-        <p>
-        Врач: ${x.doctor}<br>
-        Диагноз: ${x.diagnosis}
-        </p>`;
-    });
 }
 
 window.onload = loadDistricts;
