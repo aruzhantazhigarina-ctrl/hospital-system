@@ -49,7 +49,7 @@ async function loadDistricts() {
 
     d.forEach(x => {
         el("district").innerHTML += 
-        `<option value="${x.id}">📍 ${x.name} — ${x.address}</option>`;
+        `<option value="${x.id}">${x.name} - ${x.address}</option>`;
     });
 
     loadDoctors();
@@ -57,15 +57,18 @@ async function loadDistricts() {
 
         // 🔥 ВОТ ТУТ ИЗМЕНЕНИЕ
         async function loadDoctors() {
-            let r = await fetch("/doctors/" + el("district").value);
-            let d = await r.json();
+    let r = await fetch("/doctors/" + el("district").value);
+    let d = await r.json();
 
-           el("doctor").innerHTML += `<option value="${x.id}">🧑‍⚕️ ${x.full_name} — ${x.specialization} (каб. ${x.cabinet})</option>`;
-            });
+    el("doctor").innerHTML = "";
 
-            loadTime();
-        }
+    d.forEach(x => {
+        el("doctor").innerHTML += 
+        `<option value="${x.id}">${x.full_name} - ${x.specialization} (каб. ${x.cabinet})</option>`;
+    });
 
+    loadTime();
+}
         async function loadTime() {
             if (!el("date_input").value) return;
 
