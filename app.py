@@ -1,79 +1,110 @@
-﻿from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template
 import sqlite3
 import datetime
-import os
 
 app = Flask(__name__)
-
-DB_NAME = "hospital.db"
+DB = "hospital.db"
 
 
 # ---------------- DB ----------------
 def get_db():
-    conn = sqlite3.connect(DB_NAME)
+    conn = sqlite3.connect(DB)
     conn.row_factory = sqlite3.Row
     return conn
 
 
-# ---------------- INIT DB ----------------
 def init_db():
     conn = get_db()
     cur = conn.cursor()
 
+    # ---------------- DISTRICTS ----------------
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS districts (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        address TEXT
-    )
+        CREATE TABLE IF NOT EXISTS districts (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            address TEXT
+        )
     """)
 
+    cur.execute("SELECT COUNT(*) FROM districts")
+    if cur.fetchone()[0] == 0:
+        cur.execute("INSERT INTO districts (name, address) VALUES (?, ?)", ("Есиль", "Мангилик Ел 52"))
+        cur.execute("INSERT INTO districts (name, address) VALUES (?, ?)", ("Сарыарка", "Тауелсиздик 1-25"))
+        cur.execute("INSERT INTO districts (name, address) VALUES (?, ?)", ("Алматы", "Абая 10"))
+
+    # ---------------- DOCTORS ----------------
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS doctors (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        full_name TEXT,
-        specialization TEXT,
-        cabinet TEXT,
-        district_id INTEGER
-    )
+        CREATE TABLE IF NOT EXISTS doctors (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            full_name TEXT,
+            specialization TEXT,
+            cabinet TEXT,
+            district_id INTEGER
+        )
     """)
 
+    cur.execute("SELECT COUNT(*) FROM doctors")
+    if cur.fetchone()[0] == 0:
+
+        doctors = [
+            # Есиль
+            ("Сериков Нурлан Ерланович", "Стоматолог-терапевт", "101", 1),
+            ("Касымов Айбек Нурланович", "Хирург-стоматолог", "102", 1),
+            ("Жумабеков Ержан Канатович", "Челюстно-лицевой хирург", "103", 1),
+            ("Тлеубергенов Данияр Русланович", "Ортодонт", "104", 1),
+            ("Алиева Жанар Болатовна", "Гнатолог", "105", 1),
+            ("Омаров Руслан Дастанович", "Имплантолог", "106", 1),
+
+            # Сарыарка
+            ("Бекетов Арман Серикович", "Стоматолог-терапевт", "201", 2),
+            ("Нурпеисов Канат Ермекович", "Хирург-стоматолог", "202", 2),
+            ("Садыков Марат Нурланович", "Челюстно-лицевой хирург", "203", 2),
+            ("Кенжебаева Алия Ерлановна", "Ортодонт", "204", 2),
+            ("Турсунов Ермек Болатович", "Гнатолог", "205", 2),
+            ("Жаксылыков Дастан Канатович", "Имплантолог", "206", 2),
+
+            # Алматы
+            ("Айдаров Тимур Ерланович", "Стоматолог-терапевт", "301", 3),
+            ("Смагулова Динара Нурлановна", "Хирург-стоматолог", "302", 3),
+            ("Исабеков Нурсултан Серикович", "Челюстно-лицевой хирург", "303", 3),
+            ("Калиева Айгуль Болатовна", "Ортодонт", "304", 3),
+            ("Мухамеджанов Олжас Ермекович", "Гнатолог", "305", 3),
+            ("Рахимов Ерасыл Нурланович", "Имплантолог", "306", 3),
+        ]
+
+        cur.executemany("""
+            INSERT INTO doctors (full_name, specialization, cabinet, district_id)
+            VALUES (?, ?, ?, ?)
+        """, doctors)
+
+    # ---------------- PATIENTS ----------------
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS patients (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        full_name TEXT,
-        iin TEXT,
-        phone TEXT,
-        gender TEXT
-    )
+        CREATE TABLE IF NOT EXISTS patients (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            full_name TEXT,
+            iin TEXT,
+            phone TEXT,
+            gender TEXT
+        )
     """)
 
+    # ---------------- APPOINTMENTS ----------------
     cur.execute("""
-    CREATE TABLE IF NOT EXISTS appointments (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        doctor_id INTEGER,
-        patient_id INTEGER,
-        date TEXT,
-        time TEXT
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS medical_records (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        doctor_id INTEGER,
-        patient_id INTEGER,
-        diagnosis TEXT
-    )
+        CREATE TABLE IF NOT EXISTS appointments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            doctor_id INTEGER,
+            patient_id INTEGER,
+            date TEXT,
+            time TEXT,
+            UNIQUE(doctor_id, date, time)
+        )
     """)
 
     conn.commit()
     conn.close()
 
 
-# ---------------- INIT ON START ----------------
-if not os.path.exists(DB_NAME):
-    init_db()
+init_db()
 
 
 # ---------------- ROUTES ----------------
@@ -92,9 +123,9 @@ def districts():
     conn = get_db()
     cur = conn.cursor()
     cur.execute("SELECT * FROM districts")
-    rows = cur.fetchall()
+    data = cur.fetchall()
     conn.close()
-    return jsonify([dict(r) for r in rows])
+    return jsonify([dict(x) for x in data])
 
 
 @app.route('/doctors/<int:district_id>')
@@ -102,27 +133,27 @@ def doctors(district_id):
     conn = get_db()
     cur = conn.cursor()
     cur.execute("SELECT * FROM doctors WHERE district_id=?", (district_id,))
-    rows = cur.fetchall()
+    data = cur.fetchall()
     conn.close()
-    return jsonify([dict(r) for r in rows])
+    return jsonify([dict(x) for x in data])
 
 
 @app.route('/available/<int:doctor_id>/<date>')
 def available(doctor_id, date):
+    conn = get_db()
+    cur = conn.cursor()
 
     slots = ["09:00","10:00","11:00","12:00","13:00","14:00","15:00","16:00","17:00"]
 
-    conn = get_db()
-    cur = conn.cursor()
     cur.execute("""
         SELECT time FROM appointments
         WHERE doctor_id=? AND date=?
     """, (doctor_id, date))
 
-    busy = [r[0] for r in cur.fetchall()]
-    conn.close()
-
+    busy = [x["time"] for x in cur.fetchall()]
     free = [t for t in slots if t not in busy]
+
+    conn.close()
     return jsonify(free)
 
 
@@ -133,32 +164,37 @@ def add():
     conn = get_db()
     cur = conn.cursor()
 
-    # проверка занято
+    # weekend check
+    day = datetime.datetime.strptime(data['date'], "%Y-%m-%d").weekday()
+    if day >= 5:
+        return "WEEKEND"
+
+    # busy check
     cur.execute("""
         SELECT * FROM appointments
         WHERE doctor_id=? AND date=? AND time=?
     """, (data['doctor_id'], data['date'], data['time']))
 
     if cur.fetchone():
-        return "BUSY"
+        return "TIME_BUSY"
 
-    # пациент
+    # patient
     cur.execute("SELECT id FROM patients WHERE iin=?", (data['iin'],))
-    p = cur.fetchone()
+    patient = cur.fetchone()
 
-    if p:
-        patient_id = p[0]
+    if patient:
+        patient_id = patient["id"]
     else:
         cur.execute("""
             INSERT INTO patients (full_name, iin, phone, gender)
-            VALUES (?,?,?,?)
+            VALUES (?, ?, ?, ?)
         """, (data['name'], data['iin'], data['phone'], data['gender']))
         patient_id = cur.lastrowid
 
-    # запись
+    # appointment
     cur.execute("""
         INSERT INTO appointments (doctor_id, patient_id, date, time)
-        VALUES (?,?,?,?)
+        VALUES (?, ?, ?, ?)
     """, (data['doctor_id'], patient_id, data['date'], data['time']))
 
     conn.commit()
@@ -174,13 +210,11 @@ def all_appointments():
 
     cur.execute("""
         SELECT a.id,
-               d.full_name,
+               d.full_name AS doctor,
                d.specialization,
                d.cabinet,
-               p.id,
-               p.full_name,
+               p.full_name AS patient,
                p.iin,
-               p.phone,
                a.date,
                a.time
         FROM appointments a
@@ -188,12 +222,11 @@ def all_appointments():
         JOIN patients p ON a.patient_id = p.id
     """)
 
-    rows = cur.fetchall()
+    data = cur.fetchall()
     conn.close()
 
-    return jsonify(rows)
+    return jsonify([dict(x) for x in data])
 
 
-# ---------------- RUN ----------------
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
