@@ -6,36 +6,36 @@
 </head>
 <body>
 
-    <h1>Booking</h1>
+<h1>Booking</h1>
 
-    <select id="district" onchange="loadDoctors()"></select><br><br>
-    <select id="doctor" onchange="loadTime()"></select><br><br>
+<select id="district" onchange="loadDoctors()"></select><br><br>
+<select id="doctor" onchange="loadTime()"></select><br><br>
 
-    <input id="name" placeholder="Full name">
-    <input id="iin" placeholder="IIN">
-    <input id="phone" placeholder="Phone">
+<input id="name" placeholder="Full name">
+<input id="iin" placeholder="IIN">
+<input id="phone" placeholder="Phone">
 
-    <select id="gender">
-        <option>M</option>
-        <option>F</option>
-    </select>
+<select id="gender">
+    <option value="M">M</option>
+    <option value="F">F</option>
+</select>
 
-    <br><br>
+<br><br>
 
-    <input type="date" id="date" onchange="loadTime()"><br><br>
+<input type="date" id="date" onchange="loadTime()"><br><br>
 
-    <select id="time"></select><br><br>
+<select id="time"></select><br><br>
 
-    <button onclick="book()">Book</button>
+<button onclick="book()">Book</button>
 
-    <hr>
+<hr>
 
-    <h2>My Medical Records</h2>
+<h2>My Medical Records</h2>
 
-    <input id="search_iin">
-    <button onclick="loadRecords()">Show</button>
+<input id="search_iin">
+<button onclick="loadRecords()">Show</button>
 
-    <div id="records"></div>
+<div id="records"></div>
 
 <script>
 
@@ -49,8 +49,7 @@ async function loadDistricts() {
         district.innerHTML += `
         <option value="${x.id}">
         ${x.name} — ${x.address}
-        </option>
-        `;
+        </option>`;
     });
 
     loadDoctors();
@@ -66,15 +65,14 @@ async function loadDoctors() {
         doctor.innerHTML += `
         <option value="${x.id}">
         ${x.full_name} (${x.specialization}) кабинет ${x.cabinet}
-        </option>
-        `;
+        </option>`;
     });
 
     loadTime();
 }
 
 async function loadTime() {
-    if (!date.value) return;
+    if (!date.value || !doctor.value) return;
 
     let r = await fetch(`/available/${doctor.value}/${date.value}`);
     let d = await r.json();
@@ -82,29 +80,34 @@ async function loadTime() {
     time.innerHTML = "";
 
     d.forEach(x => {
-        time.innerHTML += `<option>${x}</option>`;
+        time.innerHTML += `<option value="${x}">${x}</option>`;
     });
 }
 
 async function book() {
 
-    if (!name.value || !iin.value || !phone.value || !date.value) {
-        alert("Введите все данные!");
+    let data = {
+        name: name.value.trim(),
+        iin: iin.value.trim(),
+        phone: phone.value.trim(),
+        gender: gender.value,
+        doctor_id: doctor.value,
+        date: date.value,
+        time: time.value
+    };
+
+    console.log("DATA:", data); // 👈 поможет если снова баг
+
+    // 💣 НОРМАЛЬНАЯ ПРОВЕРКА
+    if (!data.name || !data.iin || !data.phone || !data.date || !data.time || !data.doctor_id) {
+        alert("❌ Заполни ВСЕ поля и выбери время!");
         return;
     }
 
     let res = await fetch("/add", {
         method: "POST",
         headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({
-            name: name.value,
-            iin: iin.value,
-            phone: phone.value,
-            gender: gender.value,
-            doctor_id: parseInt(doctor.value),
-            date: date.value,
-            time: time.value
-        })
+        body: JSON.stringify(data)
     });
 
     let text = await res.text();
@@ -120,13 +123,11 @@ async function book() {
     }
 
     if (text === "ERROR") {
-        alert("❌ Ошибка!");
+        alert("❌ Ошибка сервера!");
         return;
     }
 
     alert("✅ Записано!");
-
-    // 💥 ВОТ ЭТО ГЛАВНОЕ
     loadTime();
 }
 
@@ -141,8 +142,7 @@ async function loadRecords() {
         <p>
         Врач: ${x.doctor}<br>
         Диагноз: ${x.diagnosis}
-        </p>
-        `;
+        </p>`;
     });
 }
 
