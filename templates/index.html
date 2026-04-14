@@ -52,12 +52,19 @@ async function loadDistricts() {
         `<option value="${x.id}">${x.name} - ${x.address}</option>`;
     });
 
-    loadDoctors();
+    // 🔥 ВАЖНО: выбираем первый район
+    if (d.length > 0) {
+        el("district").value = d[0].id;
+        loadDoctors();
+    }
 }
 
         // 🔥 ВОТ ТУТ ИЗМЕНЕНИЕ
-        async function loadDoctors() {
-    let r = await fetch("/doctors/" + el("district").value);
+       async function loadDoctors() {
+    let districtId = el("district").value;
+    if (!districtId) return; // 🔴 защита
+
+    let r = await fetch("/doctors/" + districtId);
     let d = await r.json();
 
     el("doctor").innerHTML = "";
