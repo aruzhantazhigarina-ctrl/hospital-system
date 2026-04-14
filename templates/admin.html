@@ -7,81 +7,58 @@
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
+* {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
     font-family: 'Poppins', sans-serif;
     background: linear-gradient(135deg, #4facfe, #00f2fe);
-
     display: flex;
     flex-direction: column;
-    align-items: center; /* центр */
+    align-items: center;
 }
 
 h1 {
     color: white;
-    font-size: 40px;
-    margin: 20px 0;
-    text-align: center;
+    margin: 20px;
 }
 
 button {
-    padding: 12px 25px;
-    font-size: 18px;
+    padding: 10px 15px;
     border: none;
     border-radius: 10px;
     background: #ff7eb3;
     color: white;
     cursor: pointer;
-    transition: 0.3s;
+    margin-top: 10px;
 }
 
 button:hover {
-    transform: scale(1.05);
     background: #ff4f9a;
-}
-
-.top-btn {
-    margin-bottom: 20px;
 }
 
 #out {
     width: 100%;
-    max-width: 1100px; /* ровная сетка */
+    max-width: 1100px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
     gap: 20px;
     padding: 20px;
-    box-sizing: border-box;
 }
 
 .card {
-    background: rgba(255, 255, 255, 0.95);
+    background: white;
     border-radius: 20px;
-    padding: 20px;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    animation: fadeIn 0.5s ease;
-    text-align: left;
+    padding: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
 }
 
 .card img {
     width: 100%;
     border-radius: 15px;
     margin-bottom: 10px;
-}
-
-.card h3 {
-    margin: 0 0 5px 0;
-    font-size: 20px;
-}
-
-.card p {
-    margin: 4px 0;
-    font-size: 15px;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(20px); }
-    to { opacity: 1; transform: translateY(0); }
 }
 
 .form {
@@ -91,107 +68,110 @@ button:hover {
     padding: 20px;
     margin: 20px;
     border-radius: 15px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
 }
 
 input, select {
     width: 100%;
-    max-width: 320px;
-    padding: 10px;
-    margin: 8px 0;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    font-size: 16px;
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 10px;
 }
-
-.form button {
-    width: 100%;
-    max-width: 320px;
-}
-
 </style>
 </head>
+
 <body>
 
 <h1>✨ Admin Panel</h1>
 
-<button class="top-btn" onclick="load()">📋 Show Appointments</button>
+<button onclick="load()">📋 Show Appointments</button>
 
 <div id="out"></div>
 
 <div class="form">
-    <h2>➕ Add Diagnosis</h2>
+<h2>➕ Add Diagnosis</h2>
 
-    <select id="patient"></select>
-    <input id="doctor_id" placeholder="Doctor ID">
-    <input id="diagnosis" placeholder="Diagnosis">
+<select id="patient"></select>
+<input id="doctor_id" placeholder="Doctor ID">
+<input id="diagnosis" placeholder="Diagnosis">
 
-    <button onclick="save()">💾 Save</button>
+<button onclick="save()">💾 Save</button>
 </div>
 
 <script>
 
-async function load() {
-    let r = await fetch("/all_appointments");
-    let d = await r.json();
+async function load(){
+ let r = await fetch("/all_appointments")
+ let d = await r.json()
 
-    out.innerHTML = "";
+ out.innerHTML = ""
 
-    d.forEach(x => {
-        out.innerHTML += `
-        <div class="card">
-            <img src="https://media.giphy.com/media/3o7TKtnuHOHHUjR38Y/giphy.gif">
-            
-            <h3>👩‍⚕️ ${x.doctor}</h3>
-            <p>🩺 ${x.specialization}</p>
-            <p>🚪 Кабинет: ${x.cabinet}</p>
+ d.forEach(x=>{
+  out.innerHTML += `
+  <div class="card">
 
-            <hr>
+    <img src="https://images.unsplash.com/photo-1588776814546-ec7e3d7a6f12">
 
-            <p>🙍 ${x.patient}</p>
-            <p>📱 ИИН: ${x.iin}</p>
+    <h3>👨‍⚕️ ${x.doctor}</h3>
+    <p>🩺 ${x.specialization}</p>
+    <p>🚪 Кабинет: ${x.cabinet}</p>
 
-            <hr>
+    <hr>
 
-            <p>📆 ${x.date}</p>
-            <p>⏱️ ${x.time}</p>
-        </div>`;
-    });
+    <p>🙍 ${x.patient}</p>
+    <p>📱 ИИН: ${x.iin}</p>
+
+    <hr>
+
+    <p>📆 ${x.date}</p>
+    <p>⏱️ ${x.time}</p>
+
+    <button onclick="del(${x.id})">❌ Delete</button>
+
+  </div>`
+ })
 }
 
-async function loadPatients() {
-    let r = await fetch("/patients");
-    let d = await r.json();
+async function loadPatients(){
+ let r = await fetch("/patients")
+ let d = await r.json()
 
-    patient.innerHTML = "";
+ patient.innerHTML = ""
 
-    d.forEach(p => {
-        patient.innerHTML += `<option value="${p.id}">${p.full_name} (${p.iin})</option>`;
-    });
+ d.forEach(p=>{
+  patient.innerHTML += `
+    <option value="${p.id}">
+      ${p.full_name} (${p.iin})
+    </option>`
+ })
 }
 
-async function save() {
-    await fetch("/add_record", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            doctor_id: doctor_id.value,
-            patient_id: patient.value,
-            diagnosis: diagnosis.value
-        })
-    });
+async function save(){
+ await fetch("/add_record",{
+  method:"POST",
+  headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({
+   doctor_id:doctor_id.value,
+   patient_id:patient.value,
+   diagnosis:diagnosis.value
+  })
+ })
 
-    alert("Saved ✅");
+ alert("Saved ✅")
 }
 
-window.onload = loadPatients;
+async function del(id){
+ if(!confirm("Удалить запись?")) return
+
+ await fetch('/delete_appointment/'+id, {
+   method: 'DELETE'
+ })
+
+ load()
+}
+
+window.onload = loadPatients
 
 </script>
 
 </body>
 </html>
-
