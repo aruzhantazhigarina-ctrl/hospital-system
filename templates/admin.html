@@ -1,70 +1,179 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
+<title>Admin Panel</title>
+
+<!-- Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+body {
+    margin: 0;
+    font-family: 'Poppins', sans-serif;
+    background: linear-gradient(135deg, #4facfe, #00f2fe);
+    color: #333;
+}
+
+h1 {
+    text-align: center;
+    color: white;
+    font-size: 40px;
+    margin-top: 20px;
+}
+
+button {
+    display: block;
+    margin: 20px auto;
+    padding: 12px 25px;
+    font-size: 18px;
+    border: none;
+    border-radius: 10px;
+    background: #ff7eb3;
+    color: white;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+button:hover {
+    transform: scale(1.05);
+    background: #ff4f9a;
+}
+
+#out {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    padding: 20px;
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    position: relative;
+    overflow: hidden;
+    animation: fadeIn 0.6s ease;
+}
+
+.card img {
+    width: 100%;
+    border-radius: 15px;
+    margin-bottom: 10px;
+}
+
+.card h3 {
+    margin: 0;
+    font-size: 22px;
+}
+
+.card p {
+    margin: 5px 0;
+    font-size: 16px;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.form {
+    background: white;
+    padding: 20px;
+    margin: 20px;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+input, select {
+    width: 100%;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+}
+
+</style>
 </head>
 <body>
 
-    <h1>Admin</h1>
+<h1>✨ Admin Panel</h1>
 
-    <button onclick="load()">Show appointments</button>
-    <div id="out"></div>
+<button onclick="load()">📋 Show Appointments</button>
 
-    <hr>
+<div id="out"></div>
 
-    <select id="patient"></select><br><br>
-    <input id="doctor_id" placeholder="Doctor ID"><br><br>
-    <input id="diagnosis" placeholder="Diagnosis"><br><br>
+<div class="form">
+    <h2>➕ Add Diagnosis</h2>
 
-    <button onclick="save()">Save</button>
+    <select id="patient"></select>
+    <input id="doctor_id" placeholder="Doctor ID">
+    <input id="diagnosis" placeholder="Diagnosis">
 
-    <script>
+    <button onclick="save()">💾 Save</button>
+</div>
 
-        async function load() {
-            let r = await fetch("/all_appointments");
-            let d = await r.json();
+<script>
 
-            out.innerHTML = "";
+async function load() {
+    let r = await fetch("/all_appointments");
+    let d = await r.json();
 
-            d.forEach(x => {
-                out.innerHTML += `
-            <p>
-            👩🏻‍⚕️{x.doctor} (🩺{x.specialization}) кабинет 🚪{x.cabinet}<br>
-            🙍🏻‍♀️{x.patient} (📱{x.iin})<br>
-            📆{x.date} ⏱️{x.time}
-            </p><hr>`;
-            });
-        }
+    out.innerHTML = "";
 
-        async function loadPatients() {
-            let r = await fetch("/patients");
-            let d = await r.json();
+    d.forEach(x => {
+        out.innerHTML += `
+        <div class="card">
+            <img src="https://media.giphy.com/media/3o7TKtnuHOHHUjR38Y/giphy.gif">
+            
+            <h3>👩‍⚕️ ${x.doctor}</h3>
+            <p>🩺 ${x.specialization}</p>
+            <p>🚪 Кабинет: ${x.cabinet}</p>
 
-            patient.innerHTML = "";
-            d.forEach(p => {
-                patient.innerHTML += `<option value="${p.id}">
-            ${p.full_name} (${p.iin})
-            </option>`;
-            });
-        }
+            <hr>
 
-        async function save() {
-            await fetch("/add_record", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    doctor_id: doctor_id.value,
-                    patient_id: patient.value,
-                    diagnosis: diagnosis.value
-                })
-            });
+            <p>🙍 ${x.patient}</p>
+            <p>📱 ИИН: ${x.iin}</p>
 
-            alert("Saved");
-        }
+            <hr>
 
-        window.onload = loadPatients;
+            <p>📆 ${x.date}</p>
+            <p>⏱️ ${x.time}</p>
+        </div>`;
+    });
+}
 
-    </script>
+async function loadPatients() {
+    let r = await fetch("/patients");
+    let d = await r.json();
+
+    patient.innerHTML = "";
+
+    d.forEach(p => {
+        patient.innerHTML += `<option value="${p.id}">${p.full_name} (${p.iin})</option>`;
+    });
+}
+
+async function save() {
+    await fetch("/add_record", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            doctor_id: doctor_id.value,
+            patient_id: patient.value,
+            diagnosis: diagnosis.value
+        })
+    });
+
+    alert("Saved ✅");
+}
+
+window.onload = loadPatients;
+
+</script>
 
 </body>
 </html>
+
