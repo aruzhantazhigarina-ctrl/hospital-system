@@ -227,7 +227,8 @@ def all_appointments():
     cur = conn.cursor()
 
     data = cur.execute("""
-        SELECT d.full_name AS doctor,
+        SELECT a.id,
+               d.full_name AS doctor,
                d.specialization,
                d.cabinet,
                p.full_name AS patient,
@@ -296,3 +297,14 @@ def records_by_iin(iin):
 
 if __name__ == "__main__":
     app.run()
+@app.route('/delete_appointment/<int:id>', methods=['DELETE'])
+def delete_appointment(id):
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("DELETE FROM appointments WHERE id=?", (id,))
+
+    conn.commit()
+    conn.close()
+
+    return "OK"
