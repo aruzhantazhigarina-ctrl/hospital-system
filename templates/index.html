@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<title>Booking</title>
+<title>Clinic Booking</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap" rel="stylesheet">
 
@@ -16,42 +16,36 @@
 body {
     margin: 0;
     font-family: 'Poppins', sans-serif;
-
-    background: linear-gradient(rgba(0, 40, 80, 0.35), rgba(0, 40, 80, 0.35)),
-                url('https://as2.ftcdn.net/jpg/02/45/00/21/1000_F_245002191_8jLUlmJyulDtSpLuwIlFVbFPAWajXnXV.jpg');
-
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
+    background: #f4f7fb;
 
     display: flex;
     flex-direction: column;
     align-items: center;
 }
 
-/* 🌐 язык */
+/* язык */
 #lang {
     margin-top: 15px;
-    padding: 8px;
+    padding: 8px 12px;
     border-radius: 8px;
 }
 
 /* заголовок */
 h1 {
-    color: white;
-    margin: 15px 0;
+    color: #2f80ed;
+    margin: 20px 0;
 }
 
 /* контейнер */
 .container {
-    background: rgba(255,255,255,0.12);
+    background: white;
     padding: 30px;
     margin: 20px;
     width: 90%;
-    max-width: 600px;
+    max-width: 650px;
     border-radius: 20px;
-    backdrop-filter: blur(10px);
+
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
 
     display: flex;
     flex-direction: column;
@@ -61,23 +55,25 @@ h1 {
 /* поля */
 input, select, button {
     width: 100%;
-    max-width: 500px;
+    max-width: 520px;
     padding: 14px;
     margin: 10px 0;
     border-radius: 10px;
-    border: none;
     font-size: 16px;
 }
 
-select {
-    cursor: pointer;
+/* инпуты */
+input, select {
+    border: 1px solid #dbeafe;
 }
 
+/* кнопка */
 button {
+    border: none;
     background: #2f80ed;
     color: white;
-    cursor: pointer;
     font-weight: 600;
+    cursor: pointer;
 }
 
 button:hover {
@@ -86,14 +82,15 @@ button:hover {
 
 /* карточки */
 .card {
-    background: rgba(255,255,255,0.2);
-    padding: 15px;
-    margin: 10px 0;
-    border-radius: 15px;
     width: 100%;
+    background: #f9fbff;
+    border: 1px solid #e3edff;
+    padding: 15px;
+    border-radius: 12px;
+    margin-top: 10px;
 }
 
-/* 📱 мобильная адаптация */
+/* мобильный */
 @media (max-width: 600px) {
     .container {
         max-width: 95%;
@@ -115,7 +112,6 @@ button:hover {
 
 <body>
 
-<!-- 🌐 переключатель языка -->
 <select id="lang" onchange="setLang(this.value)">
   <option value="ru">Русский</option>
   <option value="kz">Қазақша</option>
@@ -156,7 +152,6 @@ button:hover {
 <script>
 function el(id){return document.getElementById(id)}
 
-// 🌐 переводы
 const T = {
   ru: {
     title: "💊 Запись на приём",
@@ -184,7 +179,6 @@ const T = {
   }
 };
 
-// смена языка
 function setLang(lang){
   localStorage.setItem("lang", lang)
   const t = T[lang]
@@ -204,7 +198,6 @@ function setLang(lang){
   el("show_btn").innerText = t.show
 }
 
-// загрузка
 window.onload = () => {
   let today = new Date().toISOString().split('T')[0];
   el('date_input').value = today;
@@ -216,7 +209,6 @@ window.onload = () => {
   setLang(lang)
 }
 
-// данные
 async function loadDistricts(){
  let r=await fetch('/districts')
  let d=await r.json()
