@@ -1,123 +1,138 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>Hospital</title>
+    <meta charset="UTF-8">
 </head>
 <body>
 
-<h1>Booking</h1>
+    <h1>Booking</h1>
 
-<select id="district" onchange="loadDoctors()"></select><br><br>
-<select id="doctor" onchange="loadTime()"></select><br><br>
+    <select id="district" onchange="loadDoctors()"></select><br><br>
+    <select id="doctor" onchange="loadTime()"></select><br><br>
 
-<input id="name" placeholder="Name">
-<input id="iin" placeholder="IIN">
-<input id="phone" placeholder="Phone">
+    <input id="name_input" placeholder="Full name">
+    <input id="iin_input" placeholder="IIN">
+    <input id="phone_input" placeholder="Phone">
 
-<select id="gender">
-<option value="M">M</option>
-<option value="F">F</option>
-</select>
+    <select id="gender_input">
+        <option>M</option>
+        <option>F</option>
+    </select>
 
-<br><br>
+    <br><br>
 
-<input type="date" id="date" onchange="loadTime()"><br><br>
+    <input type="date" id="date_input" onchange="loadTime()"><br><br>
 
-<select id="time"></select><br><br>
+    <select id="time_input"></select><br><br>
 
-<button onclick="book()">Book</button>
+    <button onclick="book()">Book</button>
 
-<hr>
+    <hr>
 
-<h2>Medical Records</h2>
-<input id="search_iin" placeholder="IIN">
-<button onclick="loadRecords()">Show</button>
+    <h2>My Medical Records</h2>
 
-<div id="records"></div>
+    <input id="search_iin">
+    <button onclick="loadRecords()">Show</button>
 
-<script>
+    <div id="records"></div>
 
-async function loadDistricts(){
-let r=await fetch("/districts");
-let d=await r.json();
+    <script>
 
-district.innerHTML="";
-d.forEach(x=>{
-district.innerHTML+=`<option value="${x.id}">${x.name} - ${x.address}</option>`;
-});
+        function el(id) {
+            return document.getElementById(id);
+        }
 
-loadDoctors();
-}
+        async function loadDistricts() {
+            let r = await fetch("/districts");
+            let d = await r.json();
 
-async function loadDoctors(){
-let r=await fetch("/doctors/"+district.value);
-let d=await r.json();
+            el("district").innerHTML = "";
+            d.forEach(x => {
+                el("district").innerHTML += `<option value="${x.id}">${x.name}</option>`;
+            });
 
-doctor.innerHTML="";
-d.forEach(x=>{
-doctor.innerHTML+=`<option value="${x.id}">${x.full_name}</option>`;
-});
+            loadDoctors();
+        }
 
-loadTime();
-}
+        async function loadDoctors() {
+            let r = await fetch("/doctors/" + el("district").value);
+            let d = await r.json();
 
-async function loadTime(){
-if(!doctor.value||!date.value)return;
+            el("doctor").innerHTML = "";
+            d.forEach(x => {
+                el("doctor").innerHTML += `<option value="${x.id}">
+            ${x.full_name} (${x.specialization})
+            </option>`;
+            });
 
-let r=await fetch(`/available/${doctor.value}/${date.value}`);
-let d=await r.json();
+            loadTime();
+        }
 
-time.innerHTML="";
-d.forEach(t=>{
-time.innerHTML+=`<option value="${t}">${t}</option>`;
-});
-}
+        async function loadTime() {
+            if (!el("date_input").value) return;
 
-async function book(){
+            let r = await fetch(`/available/${el("doctor").value}/${el("date_input").value}`);
+            let d = await r.json();
 
-let data={
-name:name.value,
-iin:iin.value,
-phone:phone.value,
-gender:gender.value,
-doctor_id:doctor.value,
-date:date.value,
-time:time.value
-};
+            el("time_input").innerHTML = "";
+            d.forEach(x => {
+                el("time_input").innerHTML += `<option>${x}</option>`;
+            });
+        }
 
-if(!data.name||!data.iin||!data.phone||!data.date||!data.time){
-alert("fill all");
-return;
-}
+        async function book() {
 
-let r=await fetch("/add",{
-method:"POST",
-headers:{"Content-Type":"application/json"},
-body:JSON.stringify(data)
-});
+            let name = el("name_input").value;
+            let iin = el("iin_input").value;
+            let phone = el("phone_input").value;
+            let gender = el("gender_input").value;
+            let date = el("date_input").value;
+            let time = el("time_input").value;
+            let doctor = el("doctor").value;
 
-let t=await r.text();
-alert(t);
+            if (!name) return alert("Введите имя");
+            if (!iin) return alert("Введите ИИН");
+            if (!date) return alert("Выберите дату");
+            if (!time) return alert("Выберите время");
 
-loadTime();
-}
+            let res = await fetch("/add", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: name,
+                    iin: iin,
+                    phone: phone,
+                    gender: gender,
+                    doctor_id: parseInt(doctor),
+                    date: date,
+                    time: time
+                })
+            });
 
-async function loadRecords(){
-let iin=document.getElementById("search_iin").value;
+            let text = await res.text();
 
-let r=await fetch("/records_by_iin/"+iin);
-let d=await r.json();
+            if (text !== "OK") {
+                alert("❌ " + text);
+                return;
+            }
 
-records.innerHTML="";
-d.forEach(x=>{
-records.innerHTML+=`<p>${x.doctor} - ${x.diagnosis}</p>`;
-});
-}
+            alert("✅ Записано!");
+            loadTime();
+        }
 
-window.onload=loadDistricts;
+        async function loadRecords() {
+            let r = await fetch("/records_by_iin/" + el("search_iin").value);
+            let d = await r.json();
 
-</script>
+            el("records").innerHTML = "";
+            d.forEach(x => {
+                el("records").innerHTML += `<p>${x.doctor}<br>${x.diagnosis}</p>`;
+            });
+        }
+
+        window.onload = loadDistricts;
+
+    </script>
 
 </body>
 </html>
