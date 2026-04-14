@@ -1,0 +1,80 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+
+    <h1>Admin</h1>
+
+    <button onclick="load()">Show appointments</button>
+
+    <div id="out"></div>
+
+    <hr>
+
+    <select id="patient"></select><br><br>
+    <input id="doctor_id" placeholder="Doctor ID"><br><br>
+    <input id="diagnosis" placeholder="Diagnosis"><br><br>
+
+    <button onclick="save()">Save</button>
+
+    <script>
+
+        function el(id) {
+            return document.getElementById(id);
+        }
+
+        async function load() {
+            let r = await fetch("/all_appointments");
+            let d = await r.json();
+
+            el("out").innerHTML = "";
+
+            d.forEach(x => {
+                el("out").innerHTML += `
+            <p>
+            👨‍⚕️ <b>${x.doctor}</b> (${x.specialization}) кабинет ${x.cabinet}<br><br>
+
+            🧑 Пациент: <b>${x.patient}</b><br>
+            🆔 ID: ${x.patient_id}<br>
+            📄 ИИН: ${x.iin}<br>
+            📞 Телефон: ${x.phone}<br><br>
+
+            📅 ${x.date} ⏰ ${x.time}
+            </p><hr>`;
+            });
+        }
+
+        async function loadPatients() {
+            let r = await fetch("/patients");
+            let d = await r.json();
+
+            el("patient").innerHTML = "";
+            d.forEach(p => {
+                el("patient").innerHTML += `<option value="${p.id}">
+            ${p.full_name} (${p.iin})
+            </option>`;
+            });
+        }
+
+        async function save() {
+            await fetch("/add_record", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    doctor_id: el("doctor_id").value,
+                    patient_id: el("patient").value,
+                    diagnosis: el("diagnosis").value
+                })
+            });
+
+            alert("Saved");
+        }
+
+        window.onload = loadPatients;
+
+    </script>
+
+</body>
+</html>

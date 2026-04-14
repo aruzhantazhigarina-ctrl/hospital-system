@@ -1,0 +1,138 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+
+    <h1>Booking</h1>
+
+    <select id="district" onchange="loadDoctors()"></select><br><br>
+    <select id="doctor" onchange="loadTime()"></select><br><br>
+
+    <input id="name_input" placeholder="Full name">
+    <input id="iin_input" placeholder="IIN">
+    <input id="phone_input" placeholder="Phone">
+
+    <select id="gender_input">
+        <option>M</option>
+        <option>F</option>
+    </select>
+
+    <br><br>
+
+    <input type="date" id="date_input" onchange="loadTime()"><br><br>
+
+    <select id="time_input"></select><br><br>
+
+    <button onclick="book()">Book</button>
+
+    <hr>
+
+    <h2>My Medical Records</h2>
+
+    <input id="search_iin">
+    <button onclick="loadRecords()">Show</button>
+
+    <div id="records"></div>
+
+    <script>
+
+        function el(id) {
+            return document.getElementById(id);
+        }
+
+        async function loadDistricts() {
+            let r = await fetch("/districts");
+            let d = await r.json();
+
+            el("district").innerHTML = "";
+            d.forEach(x => {
+                el("district").innerHTML += `<option value="${x.id}">${x.name}</option>`;
+            });
+
+            loadDoctors();
+        }
+
+        async function loadDoctors() {
+            let r = await fetch("/doctors/" + el("district").value);
+            let d = await r.json();
+
+            el("doctor").innerHTML = "";
+            d.forEach(x => {
+                el("doctor").innerHTML += `<option value="${x.id}">
+            ${x.full_name} (${x.specialization})
+            </option>`;
+            });
+
+            loadTime();
+        }
+
+        async function loadTime() {
+            if (!el("date_input").value) return;
+
+            let r = await fetch(`/available/${el("doctor").value}/${el("date_input").value}`);
+            let d = await r.json();
+
+            el("time_input").innerHTML = "";
+            d.forEach(x => {
+                el("time_input").innerHTML += `<option>${x}</option>`;
+            });
+        }
+
+        async function book() {
+
+            let name = el("name_input").value;
+            let iin = el("iin_input").value;
+            let phone = el("phone_input").value;
+            let gender = el("gender_input").value;
+            let date = el("date_input").value;
+            let time = el("time_input").value;
+            let doctor = el("doctor").value;
+
+            if (!name) return alert("Введите имя");
+            if (!iin) return alert("Введите ИИН");
+            if (!date) return alert("Выберите дату");
+            if (!time) return alert("Выберите время");
+
+            let res = await fetch("/add", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    name: name,
+                    iin: iin,
+                    phone: phone,
+                    gender: gender,
+                    doctor_id: parseInt(doctor),
+                    date: date,
+                    time: time
+                })
+            });
+
+            let text = await res.text();
+
+            if (text !== "OK") {
+                alert("❌ " + text);
+                return;
+            }
+
+            alert("✅ Записано!");
+            loadTime();
+        }
+
+        async function loadRecords() {
+            let r = await fetch("/records_by_iin/" + el("search_iin").value);
+            let d = await r.json();
+
+            el("records").innerHTML = "";
+            d.forEach(x => {
+                el("records").innerHTML += `<p>${x.doctor}<br>${x.diagnosis}</p>`;
+            });
+        }
+
+        window.onload = loadDistricts;
+
+    </script>
+
+</body>
+</html>
