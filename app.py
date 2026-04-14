@@ -17,7 +17,7 @@ def init_db():
     conn = get_db()
     cur = conn.cursor()
 
-    # ---------------- DISTRICTS ----------------
+    # ---------------- TABLES ----------------
     cur.execute("""
         CREATE TABLE IF NOT EXISTS districts (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,19 +26,6 @@ def init_db():
         )
     """)
 
-   cur.execute("SELECT COUNT(*) FROM districts")
-if cur.fetchone()[0] == 0:
-
-    cur.executemany("""
-        INSERT INTO districts (name, address)
-        VALUES (?, ?)
-    """, [
-        ("Есиль", "Мангилик Ел 52"),
-        ("Сарыарка", "Тауелсиздик 1-25"),
-        ("Алматы", "Абая 10")
-    ])
-
-    # ---------------- DOCTORS ----------------
     cur.execute("""
         CREATE TABLE IF NOT EXISTS doctors (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,41 +36,6 @@ if cur.fetchone()[0] == 0:
         )
     """)
 
-    cur.execute("SELECT COUNT(*) FROM doctors")
-    if cur.fetchone()[0] == 0:
-
-        doctors = [
-            # Есиль
-            ("Сериков Нурлан Ерланович", "Стоматолог-терапевт", "101", 1),
-            ("Касымов Айбек Нурланович", "Хирург-стоматолог", "102", 1),
-            ("Жумабеков Ержан Канатович", "Челюстно-лицевой хирург", "103", 1),
-            ("Тлеубергенов Данияр Русланович", "Ортодонт", "104", 1),
-            ("Алиева Жанар Болатовна", "Гнатолог", "105", 1),
-            ("Омаров Руслан Дастанович", "Имплантолог", "106", 1),
-
-            # Сарыарка
-            ("Бекетов Арман Серикович", "Стоматолог-терапевт", "201", 2),
-            ("Нурпеисов Канат Ермекович", "Хирург-стоматолог", "202", 2),
-            ("Садыков Марат Нурланович", "Челюстно-лицевой хирург", "203", 2),
-            ("Кенжебаева Алия Ерлановна", "Ортодонт", "204", 2),
-            ("Турсунов Ермек Болатович", "Гнатолог", "205", 2),
-            ("Жаксылыков Дастан Канатович", "Имплантолог", "206", 2),
-
-            # Алматы
-            ("Айдаров Тимур Ерланович", "Стоматолог-терапевт", "301", 3),
-            ("Смагулова Динара Нурлановна", "Хирург-стоматолог", "302", 3),
-            ("Исабеков Нурсултан Серикович", "Челюстно-лицевой хирург", "303", 3),
-            ("Калиева Айгуль Болатовна", "Ортодонт", "304", 3),
-            ("Мухамеджанов Олжас Ермекович", "Гнатолог", "305", 3),
-            ("Рахимов Ерасыл Нурланович", "Имплантолог", "306", 3),
-        ]
-
-        cur.executemany("""
-            INSERT INTO doctors (full_name, specialization, cabinet, district_id)
-            VALUES (?, ?, ?, ?)
-        """, doctors)
-
-    # ---------------- PATIENTS ----------------
     cur.execute("""
         CREATE TABLE IF NOT EXISTS patients (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -94,7 +46,6 @@ if cur.fetchone()[0] == 0:
         )
     """)
 
-    # ---------------- APPOINTMENTS ----------------
     cur.execute("""
         CREATE TABLE IF NOT EXISTS appointments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,6 +56,52 @@ if cur.fetchone()[0] == 0:
             UNIQUE(doctor_id, date, time)
         )
     """)
+
+    # 💣 ВАЖНО: ОБНОВЛЯЕМ ДАННЫЕ ВСЕГДА
+    cur.execute("DELETE FROM districts")
+    cur.execute("DELETE FROM doctors")
+
+    # ---------------- DISTRICTS ----------------
+    cur.executemany("""
+        INSERT INTO districts (name, address)
+        VALUES (?, ?)
+    """, [
+        ("Есиль", "Мангилик Ел 52"),
+        ("Сарыарка", "Тауелсиздик 1-25"),
+        ("Алматы", "Абая 10")
+    ])
+
+    # ---------------- DOCTORS ----------------
+    doctors = [
+        # Есиль
+        ("Сериков Нурлан Ерланович", "Стоматолог-терапевт", "101", 1),
+        ("Касымов Айбек Нурланович", "Хирург-стоматолог", "102", 1),
+        ("Жумабеков Ержан Канатович", "Челюстно-лицевой хирург", "103", 1),
+        ("Тлеубергенов Данияр Русланович", "Ортодонт", "104", 1),
+        ("Алиева Жанар Болатовна", "Гнатолог", "105", 1),
+        ("Омаров Руслан Дастанович", "Имплантолог", "106", 1),
+
+        # Сарыарка
+        ("Бекетов Арман Серикович", "Стоматолог-терапевт", "201", 2),
+        ("Нурпеисов Канат Ермекович", "Хирург-стоматолог", "202", 2),
+        ("Садыков Марат Нурланович", "Челюстно-лицевой хирург", "203", 2),
+        ("Кенжебаева Алия Ерлановна", "Ортодонт", "204", 2),
+        ("Турсунов Ермек Болатович", "Гнатолог", "205", 2),
+        ("Жаксылыков Дастан Канатович", "Имплантолог", "206", 2),
+
+        # Алматы
+        ("Айдаров Тимур Ерланович", "Стоматолог-терапевт", "301", 3),
+        ("Смагулова Динара Нурлановна", "Хирург-стоматолог", "302", 3),
+        ("Исабеков Нурсултан Серикович", "Челюстно-лицевой хирург", "303", 3),
+        ("Калиева Айгуль Болатовна", "Ортодонт", "304", 3),
+        ("Мухамеджанов Олжас Ермекович", "Гнатолог", "305", 3),
+        ("Рахимов Ерасыл Нурланович", "Имплантолог", "306", 3),
+    ]
+
+    cur.executemany("""
+        INSERT INTO doctors (full_name, specialization, cabinet, district_id)
+        VALUES (?, ?, ?, ?)
+    """, doctors)
 
     conn.commit()
     conn.close()
@@ -170,12 +167,10 @@ def add():
     conn = get_db()
     cur = conn.cursor()
 
-    # weekend check
     day = datetime.datetime.strptime(data['date'], "%Y-%m-%d").weekday()
     if day >= 5:
         return "WEEKEND"
 
-    # busy check
     cur.execute("""
         SELECT * FROM appointments
         WHERE doctor_id=? AND date=? AND time=?
@@ -184,7 +179,6 @@ def add():
     if cur.fetchone():
         return "TIME_BUSY"
 
-    # patient
     cur.execute("SELECT id FROM patients WHERE iin=?", (data['iin'],))
     patient = cur.fetchone()
 
@@ -197,7 +191,6 @@ def add():
         """, (data['name'], data['iin'], data['phone'], data['gender']))
         patient_id = cur.lastrowid
 
-    # appointment
     cur.execute("""
         INSERT INTO appointments (doctor_id, patient_id, date, time)
         VALUES (?, ?, ?, ?)
